@@ -1,12 +1,14 @@
 import fileParser
 from lexical import lexical
+from syntax import SyntaxAnalyser
 
 def main():
     tokens, formula = fileParser.loadFile("example1.txt")
-    test = lexical(tokens, formula)
+    #print(str(tokens))
+    tokenList = lexical(tokens, formula)
+    #print("\n".join(map(str, test)))
+    
+    syntax = SyntaxAnalyser()
+    out = syntax.syntax(tokenList)
 
 main()
-
-#Start symbol S - capitals mark non terminals
-#S -> T | (S ^ S) | ... | not S
-#T -> P(y1..yd) | (C = D) | (C = x) | (x = C) | (x = y)     p a predicate of arity d, C,D constants, x,y variables
