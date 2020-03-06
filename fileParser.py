@@ -36,7 +36,7 @@ class Predicate:
     @staticmethod
     def fromString(items):
         new = Predicate()
-        if items.endswith("]") and items.count("["):
+        if items.endswith("]") and items.count("[") == 1:
             new.name = items[:items.find("[")]
             new.arity = int(items[items.find("[")+1:items.find("]")])
 

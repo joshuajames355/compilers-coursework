@@ -5,17 +5,18 @@ CONSTANT = 1
 PREDICATE = 2
 EQUALITY = 3
 CONNECTIVE = 4
-QUANTIFIER = 5
-BRACKET_START = 6 
-BRACKET_END = 7
-COMMA = 8
+QUANTIFIER = 5 #2 parameters
+NEGATION = 6 
+BRACKET_START = 7
+BRACKET_END = 8
+COMMA = 9
 
 class Token:
     tokenClass = -1 #one of the values above
     name = "" #the name 
     attributes = -1 #for predicate, the arity
 
-    def __init__(self, tokenClass, name, attributes):
+    def __init__(self, tokenClass, name, attributes = -1):
         self.tokenClass = tokenClass
         self.name = name
         self.attributes = attributes
@@ -26,17 +27,20 @@ class Token:
 def tokensFromTokensImport(tokensImport):
     out = []
     for each in tokensImport.variables:
-        out += [Token(VARIABLE, each, -1)]
+        out += [Token(VARIABLE, each)]
     for each in tokensImport.constants:
-        out += [Token(CONSTANT, each, -1)]
-    for each in tokensImport.predicates:
+        out += [Token(CONSTANT, each)]
+    for index, each in enumerate(tokensImport.predicates):
         out += [Token(PREDICATE, each.name, each.arity)]
     for each in tokensImport.equality:
-        out += [Token(EQUALITY, each, -1)]
-    for each in tokensImport.connectives:
-        out += [Token(CONNECTIVE, each, -1)]
+        out += [Token(EQUALITY, each)]
+    for index, each in enumerate(tokensImport.connectives):
+        if index == 4:
+            out += [Token(NEGATION, each)]
+        else:
+            out += [Token(CONNECTIVE, each)]
     for each in tokensImport.quantifiers:
-        out += [Token(QUANTIFIER, each, -1)]
+        out += [Token(QUANTIFIER, each)]
     return out
 
 #tokens - a list of strings, representing all possible tokens
