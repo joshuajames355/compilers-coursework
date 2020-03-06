@@ -1,4 +1,5 @@
-import rules
+import fileParser
+def main():
+    tokens, formula = fileParser.loadFile("example1.txt")
 
-print("loading")
-print(rules.loadFromFile("example.txt"))
+main()

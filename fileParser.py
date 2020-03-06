@@ -1,32 +1,44 @@
-class FileData:
+import string
+
+#stores the token information imported from the file
+class TokensImport:
     ##all are list of tokens, pulled directly from a file
     variables = []
     constants = []
-    predicates = []
-    equality = []
-    connectives = [] #2 parameters
-    quantifiers = []
-    formula = ""
+    predicates = [] #instanes of Predicate, represents name and arity
+    equality = [] #needs to be length 1
+    connectives = [] #needs to be length 5
+    quantifiers = [] #needs to be length 2
 
     def __str__(self):
-        return """Variables: {}
+        return """
+Variables: {}
 constants: {}
 predicates: {}
 equality: {}
 connectives: {}
-quantifiers: {}
-formula: {}""".format(self.variables, self.constants, " ".join(map(str, self.predicates)), self.equality, self.connectives, self.quantifiers, self.formula)
+quantifiers: {}""".format(
+        ", ".join(self.variables), 
+        ", ".join(self.constants), 
+        ", ".join(map(str, self.predicates)), 
+        ", ".join(self.equality), 
+        ", ".join(self.connectives), 
+        ", ".join(self.quantifiers))
+
+    #gets a list of all tokens (listed in the file, so no ( , ) etc), as strings
+    def getTokenList(self):
+        return self.variables + self.constants + self.quantifiers + self.equality + self.connectives + list(map(lambda  x: x.name, self.predicates))
 
 class Predicate:
     name = ""
     arity = -1
 
     @staticmethod
-    def fromString(string):
+    def fromString(items):
         new = Predicate()
-        if string.endswith("]") and string.count("["):
-            new.name = string[:string.find("[")]
-            new.arity = int(string[string.find("[")+1:string.find("]")])
+        if items.endswith("]") and items.count("["):
+            new.name = items[:items.find("[")]
+            new.arity = int(items[items.find("[")+1:items.find("]")])
 
         return new
 
@@ -35,9 +47,11 @@ class Predicate:
 
 #filename -string
 #returns (RuleSet, formula)
-def loadFromFile(filename):
+def loadFile(filename):
     KEYWORDS = ["variables:", "constants:", "predicates:", "equality:", "connectives:", "quantifiers:", "formula:"]
-    rules = FileData()
+    formula = ""
+
+    rules = TokensImport()
     with open(filename) as file:
         data = file.read()
 
@@ -53,7 +67,10 @@ def loadFromFile(filename):
                 if currentString.endswith(x):
                     newKeyword = x
             if currentIndex+1 == len(data) or newKeyword != "":
-                endOfSection = currentIndex - len(newKeyword)
+                if currentIndex+1 == len(data): #special case to handle when EOF terminates a section without any whitespace/labels following it
+                    endOfSection = currentIndex - len(newKeyword) + 1
+                else:
+                    endOfSection = currentIndex - len(newKeyword)
 
                 if lastKeyword == "variables:":
                     rules.variables = parseList(data[startIndex:endOfSection])
@@ -68,13 +85,18 @@ def loadFromFile(filename):
                 if lastKeyword == "quantifiers:":
                     rules.quantifiers = parseList(data[startIndex:endOfSection])
                 if lastKeyword == "formula:":
-                    rules.formula = data[startIndex:endOfSection].strip()
+                    formula = data[startIndex:endOfSection].strip()
                 startIndex = currentIndex + 1
                 lastKeyword = newKeyword
 
             currentIndex += 1
 
-    return rules
+    return (rules, formula)
+
+VALID_CHARS_VAR = set(string.ascii_letters + string.digits + "_")
+def validateVariable(name):
+    if set(name) > VALID_CHARS_VAR:
+        raise ValueError("Invalid character: {} in variable name")
 
 #listIn is a string, which is a list of items, seperated by whitespace
 def parseList(listIn):
