@@ -1,14 +1,22 @@
-import fileParser
+from fileParser import loadFile
 from lexical import lexical
-from syntax import SyntaxAnalyser
+from syntax import SyntaxAnalyser, generateGrammar
+from render import drawTree
+
+import argparse
 
 def main():
-    tokens, formula = fileParser.loadFile("example1.txt")
-    #print(str(tokens))
+    parser = argparse.ArgumentParser(description="First Order Logic Parser.")
+    parser.add_argument('input', help="The input file")
+    parser.add_argument('-o', help="The output file", default="output")
+    parser.add_argument("-l", help="The log file", default="log.txt" )
+    parser.add_argument("-v", help="View the file after rendering it", action='store_true')
+    args=parser.parse_args()
+
+    tokens, formula = loadFile(args.input)
     tokenList = lexical(tokens, formula)
-    #print("\n".join(map(str, test)))
-    
     syntax = SyntaxAnalyser()
-    out = syntax.syntax(tokenList)
+    tree = syntax.syntax(tokenList)
+    drawTree(tree, args.o, args.v)
 
 main()
