@@ -1,4 +1,4 @@
-import string
+import string, copy
 
 VARIABLE = 0
 CONSTANT = 1
@@ -11,18 +11,44 @@ BRACKET_START = 7
 BRACKET_END = 8
 COMMA = 9
 
+def getTokenClassStr(tokenClass):
+    if tokenClass == 0:
+        return "VARIABLE"
+    elif tokenClass == 1:
+        return "CONSTANT"
+    elif tokenClass == 2:
+        return "PREDICATE"
+    elif tokenClass == 3:
+        return "EQUALITY"
+    elif tokenClass == 4:
+        return "CONNECTIVE"
+    elif tokenClass == 5:
+        return "QUANTIFIER"
+    elif tokenClass == 6:
+        return "NEGATION"
+    elif tokenClass == 7:
+        return "BRACKET_START"
+    elif tokenClass == 8:
+        return "BRACKET_END"
+    elif tokenClass == 9:
+        return "CONSTANT"
+    else:
+        return "UNKOWN"
+
 class Token:
     tokenClass = -1 #one of the values above
     name = "" #the name 
     attributes = -1 #for predicate, the arity
+    position = -1
 
-    def __init__(self, tokenClass, name, attributes = -1):
+    def __init__(self, tokenClass, name, attributes = -1, position = -1):
         self.tokenClass = tokenClass
         self.name = name
         self.attributes = attributes
+        self.position = position
 
     def __str__(self):
-        return "Class: {} - Name: {} Attributes: {}".format(self.tokenClass, self.name, self.attributes)
+        return "[type: {}, Name: {}".format(getTokenClassStr(self.tokenClass), self.name,) + (", position: {}".format(self.position) if self.position != -1 else "") +(", arity: {} ".format(self.attributes) if self.attributes != -1 else "") + "]" 
 
 def tokensFromTokensImport(tokensImport):
     out = []
@@ -84,21 +110,22 @@ def lexical(tokens, source):
             match = False
             for token in TOKENS_BY_SIZE[currentLength]:
                 if currentToken == token.name:
-                    match = token
+                    match = copy.copy(token)
                     break
             if not match:
                 raise ValueError("Invalid token: {} in formula at position: {}".format(currentToken, start))
 
+            match.position = start
             output += [match]
 
             start = current + 1
         if mustAddCurrent:
             if currentChar == "(":
-                output += [Token(BRACKET_START, "(", -1)]
+                output += [Token(BRACKET_START, "(", -1, current)]
             if currentChar == ")":
-                output += [Token(BRACKET_END, ")", -1)]
+                output += [Token(BRACKET_END, ")", -1, current)]
             if currentChar == ",":
-                output += [Token(COMMA, ",", -1)]
+                output += [Token(COMMA, ",", -1, current)]
             start = current + 1
 
         current += 1

@@ -1,19 +1,41 @@
 from lexical import *
 
 #Start symbol S - capitals mark non terminals
-#S -> p(y1..yd)
+#S -> p(V..V) -n*V
 # | (B)       
 # | not S
 # | forall x S | foreach x S | exists x S                      x variable
-
-#P -> y1..yd                                    p a predicate of arity d, yi a variable 
 
 #a term inside a bracket
 # B -> A = A     
 # | S D
 
-#A -> C | x         C constants, y variables 
+#A -> C | V         
 #D -> ^ S | v S | => S | <=> S
+
+#V -> x - x a variable
+#C -> k - k a constant
+
+def generateGrammar(tokenData):
+    output = "S -> " 
+    for each in tokenData.predicates:
+        output += each.name + "(" + "V"*each.arity + ") | "
+    output += "(B) | "
+    for each in tokenData.quantifiers:
+        output += each + " V S | "
+    for index, each in enumerate(tokenData.connectives):
+        if index == 4:
+            output += each + " S | "
+    output += "\nB -> A " +  tokenData.equality[0] +  " A | S D"
+    output += "\nA -> C | V"
+    output += "\nD -> "
+    for (index,each) in enumerate(tokenData.connectives):
+        if index != 4:
+            output += each + " S | "
+    output += "\nV -> " + " | ".join(tokenData.variables)
+    output += "\nC -> " + " | ".join(tokenData.constants)
+    return output
+
 
 class GraphNode:
     identifier = 'S'
@@ -61,8 +83,7 @@ class SyntaxAnalyser:
                 elif currentToken.tokenClass == BRACKET_START:
                     self.addCurrentToken(currentToken)
                     self.pushChild('B')  
-                elif currentToken.tokenClass == BRACKET_END:
-                    if len(self.current.children) == 2 and self.current.children[1].identifier == 'B':
+                elif currentToken.tokenClass == BRACKET_END and len(self.current.children) == 2 and self.current.children[1].identifier == 'B':
                         self.addCurrentToken(currentToken)
                         self.complete()
 
@@ -78,7 +99,7 @@ class SyntaxAnalyser:
                     self.pushChild('S') 
 
                 else:
-                    raise Exception("Failed to match token: {}".format(str(self.source[self.index])))
+                    raise Exception("Unexpected token: {} found while parsing Statement.".format(str(self.source[self.index])))
 
             elif self.current.identifier == 'B':
                 if len(self.current.children) == 0:
@@ -99,7 +120,7 @@ class SyntaxAnalyser:
         return self.start
 
     def addCurrentToken(self, token):
-        self.current.children.append(GraphNode('',self.current, token, True))
+        self.current.children.append(GraphNode('',self.current , token, True))
         self.index += 1
 
     def pushChild(self, className):
@@ -120,7 +141,7 @@ class SyntaxAnalyser:
     def matchIgnore(self, token):
         if self.index < len(self.source):
             if self.source[self.index].tokenClass != token:
-                raise Exception("Unexpected token: {} found".format(str(self.source[self.index])))
+                raise Exception("Unexpected token: {} found, expecting a token of type: {}".format(str(self.source[self.index]), getTokenClassStr(token)))
             self.index += 1
         else:
             raise Exception("End of file reached unexpectedly")
@@ -128,7 +149,7 @@ class SyntaxAnalyser:
     def match(self, token):
         if self.index < len(self.source):
             if self.source[self.index].tokenClass != token:
-                raise Exception("Unexpected token: {} found".format(str(self.source[self.index])))
+                raise Exception("Unexpected token: {} found, expecting a token of type: {}".format(str(self.source[self.index]), getTokenClassStr(token)))
             self.current.children += [GraphNode('', self.current, self.source[self.index])]
             self.index += 1
         else:

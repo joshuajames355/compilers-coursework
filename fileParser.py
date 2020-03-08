@@ -91,12 +91,46 @@ def loadFile(filename):
 
             currentIndex += 1
 
+    validateRules(rules)
     return (rules, formula)
+
+def validateRules(rules):
+    if len(rules.equality) != 1:
+        raise ValueError("Must have only 1 equality symbol")
+    if len(rules.connectives) != 5:
+        raise ValueError("Must have only 5 connectives")
+    if len(rules.quantifiers) != 2:
+        raise ValueError("Must have only 2 quantifiers")
+    for x in rules.variables + rules.constants + list(map(lambda x: x.name, rules.predicates)):
+        validateVariable(x)
+    for x in rules.equality:
+        validateEquality(x)      
+    for x in rules.connectives + rules.quantifiers:
+        validateConnective(x)      
+    checkUnique(rules)
+
+def checkUnique(rules):
+    found = []
+    everything = rules.equality + rules.connectives + rules.quantifiers + rules.variables + rules.constants + list(map(lambda x: x.name, rules.predicates))
+    for each in everything:
+        if each in found:
+            raise ValueError("Invalid duplicate identifier: {}".format(each))
+        found.append(each)
 
 VALID_CHARS_VAR = set(string.ascii_letters + string.digits + "_")
 def validateVariable(name):
-    if set(name) > VALID_CHARS_VAR:
-        raise ValueError("Invalid character: {} in variable name")
+    if not set(name) < VALID_CHARS_VAR:
+        raise ValueError("Invalid variable/constant name: {}".format(name))
+
+VALID_CHARS_CONNECTIVES = set(string.ascii_letters + string.digits + "_" + "\\")
+def validateConnective(name):
+    if not set(name) < VALID_CHARS_CONNECTIVES:
+        raise ValueError("Invalid connective/qualifier name: {}".format(name))
+
+VALID_CHARS_EQUALITY = set(string.ascii_letters + string.digits + "_" + "\\" + "=")
+def validateEquality(name):
+    if not set(name) < VALID_CHARS_EQUALITY:
+        raise ValueError("Invalid name for equality symbol: {}".format(name))
 
 #listIn is a string, which is a list of items, seperated by whitespace
 def parseList(listIn):
