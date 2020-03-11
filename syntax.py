@@ -19,7 +19,7 @@ from lexical import *
 def generateGrammar(tokenData):
     output = "S -> " 
     for each in tokenData.predicates:
-        output += each.name + "(" + "V"*each.arity + ") | "
+        output += each.name + "(" + ("V,"*each.arity)[:2*each.arity-1] + ") | "
     output += "(B) | "
     for each in tokenData.quantifiers:
         output += each + " V S | "

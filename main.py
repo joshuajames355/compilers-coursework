@@ -13,10 +13,18 @@ def main():
     parser.add_argument("-v", help="View the file after rendering it", action='store_true')
     args=parser.parse_args()
 
-    tokens, formula = loadFile(args.input)
-    tokenList = lexical(tokens, formula)
-    syntax = SyntaxAnalyser()
-    tree = syntax.syntax(tokenList)
-    drawTree(tree, args.o, args.v)
+    with open(args.l, mode="a") as logFile:
+        try:
+            tokens, formula = loadFile(args.input)
+            logFile.write("Imported file: {}\n".format(args.input))   
+            logFile.write("Grammar:\n{}\n".format(generateGrammar(tokens)))   
+            tokenList = lexical(tokens, formula)
+            syntax = SyntaxAnalyser()
+            tree = syntax.syntax(tokenList)
+            logFile.write("Formula Sucessfully parsed!\n")
+            drawTree(tree, args.o, args.v)
+            logFile.write("Written tree to: {}\n".format(args.o))
+        except Exception as e:
+            logFile.write("An Error Occured! \n" + str(e) + "\n")    
 
 main()

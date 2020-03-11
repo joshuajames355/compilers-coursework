@@ -48,7 +48,7 @@ class Token:
         self.position = position
 
     def __str__(self):
-        return "[type: {}, Name: {}".format(getTokenClassStr(self.tokenClass), self.name,) + (", position: {}".format(self.position) if self.position != -1 else "") +(", arity: {} ".format(self.attributes) if self.attributes != -1 else "") + "]" 
+        return "[type: {}, Name: '{}'".format(getTokenClassStr(self.tokenClass), self.name,) + (", position: {}".format(self.position) if self.position != -1 else "") +(", arity: {} ".format(self.attributes) if self.attributes != -1 else "") + "]" 
 
 def tokensFromTokensImport(tokensImport):
     out = []
