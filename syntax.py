@@ -25,7 +25,7 @@ def generateGrammar(tokenData):
         output += each + " V S | "
     for index, each in enumerate(tokenData.connectives):
         if index == 4:
-            output += each + " S | "
+            output += each + " S"
     output += "\nB -> A " +  tokenData.equality[0] +  " A | S D"
     output += "\nA -> C | V"
     output += "\nD -> "
@@ -74,9 +74,9 @@ class SyntaxAnalyser:
                     self.addCurrentToken(currentToken)
                     self.match(BRACKET_START)
                     for _ in range(currentToken.attributes-1):
-                        self.match(VARIABLE)
+                        self.matchVariable()
                         self.match(COMMA)
-                    self.match(VARIABLE)
+                    self.matchVariable()
                     self.match(BRACKET_END)
                     self.complete()     
 
@@ -94,28 +94,32 @@ class SyntaxAnalyser:
 
                 elif currentToken.tokenClass == QUANTIFIER:
                     self.addCurrentToken(currentToken)
-                    self.match(VARIABLE)
+                    self.matchVariable()
                     self.current.complete = True
                     self.pushChild('S') 
 
                 else:
-                    raise Exception("Unexpected token: {} found while parsing Statement.".format(str(self.source[self.index])))
+                    raise Exception("Unexpected token: {} found while parsing Statement".format(str(self.source[self.index])))
 
             elif self.current.identifier == 'B':
                 if len(self.current.children) == 0:
                     if currentToken.tokenClass == VARIABLE or currentToken.tokenClass == CONSTANT:
-                        self.addCurrentToken(currentToken)
+                        self.matchVariableConstant()
 
                         self.match(EQUALITY)
-                        self.matchMultiple([VARIABLE, CONSTANT])
+                        self.matchVariableConstant()
                         self.complete()
                     else:
                         self.pushChild('S')
-                elif len(self.current.children) == 1: #Actually in class D,
-                    self.match(CONNECTIVE)
-                    self.pushChild('S')
-                elif len(self.current.children) == 3:
-                    self.complete()
+                elif len(self.current.children) == 1: 
+                    self.current.complete = True
+                    self.pushChild('D')
+
+                
+            elif self.current.identifier == 'D':
+                self.match(CONNECTIVE)
+                self.current.complete = True
+                self.pushChild('S')
 
         return self.start
 
@@ -151,6 +155,34 @@ class SyntaxAnalyser:
             if self.source[self.index].tokenClass != token:
                 raise Exception("Unexpected token: {} found, expecting a token of type: {}".format(str(self.source[self.index]), getTokenClassStr(token)))
             self.current.children += [GraphNode('', self.current, self.source[self.index])]
+            self.index += 1
+        else:
+            raise Exception("End of file reached unexpectedly")
+
+    def matchVariable(self): #adds the V subtree
+        if self.index < len(self.source):
+            if self.source[self.index].tokenClass != VARIABLE:
+                raise Exception("Unexpected token: {} found, expecting a token of type: {}".format(str(self.source[self.index]), getTokenClassStr(VARIABLE)))
+            
+            newChild = GraphNode('V', self.current, complete=True)
+            newChild.children = [GraphNode('', newChild, self.source[self.index], True)]
+            self.current.children += [newChild]
+            self.index += 1
+        else:
+            raise Exception("End of file reached unexpectedly")
+
+    def matchVariableConstant(self): #adds the V/D subtree
+        if self.index < len(self.source):
+            if self.source[self.index].tokenClass != VARIABLE and self.source[self.index].tokenClass != CONSTANT:
+                raise Exception("Unexpected token: {} found, expecting a token of type: {} or: {}".format(str(self.source[self.index]), getTokenClassStr(VARIABLE), getTokenClassStr(CONSTANT)))
+            
+            t = 'V'
+            if self.source[self.index].tokenClass != VARIABLE:
+                t = 'C'
+
+            newChild = GraphNode(t, self.current, complete=True)
+            newChild.children = [GraphNode('', newChild, self.source[self.index], True)]
+            self.current.children += [newChild]
             self.index += 1
         else:
             raise Exception("End of file reached unexpectedly")
