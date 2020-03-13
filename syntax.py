@@ -1,39 +1,26 @@
 from lexical import *
 
-#Start symbol S - capitals mark non terminals
-#S -> p(V..V) -n*V
-# | (B)       
-# | not S
-# | forall x S | foreach x S | exists x S                      x variable
-
-#a term inside a bracket
-# B -> A = A     
-# | S D
-
-#A -> C | V         
-#D -> ^ S | v S | => S | <=> S
-
-#V -> x - x a variable
-#C -> k - k a constant
-
 def generateGrammar(tokenData):
-    output = "S -> " 
+    output = "NonTerminals = {:S, :B, :A, :B, :D}\n"
+    output += "Terminal = {" + ", ".join( ["','", "(", ")" ] + tokenData.getTokenList()) + "}"
+    output += "\nProduction Rules: \n"
+    output += ":S -> " 
     for each in tokenData.predicates:
         output += each.name + "(" + ("V,"*each.arity)[:2*each.arity-1] + ") | "
-    output += "(B) | "
+    output += "(:B) | "
     for each in tokenData.quantifiers:
-        output += each + " V S | "
+        output += each + " V :S | "
     for index, each in enumerate(tokenData.connectives):
         if index == 4:
-            output += each + " S"
-    output += "\nB -> A " +  tokenData.equality[0] +  " A | S D"
-    output += "\nA -> C | V"
-    output += "\nD -> "
+            output += each + " :S"
+    output += "\n:B -> :A " +  tokenData.equality[0] +  " :A | :S :D"
+    output += "\n:A -> :C | :V"
+    output += "\n:D -> "
     for (index,each) in enumerate(tokenData.connectives):
         if index != 4:
-            output += each + " S | "
-    output += "\nV -> " + " | ".join(tokenData.variables)
-    output += "\nC -> " + " | ".join(tokenData.constants)
+            output += each + " :S | "
+    output += "\n:V -> " + " | ".join(tokenData.variables)
+    output += "\n:C -> " + " | ".join(tokenData.constants)
     return output
 
 
@@ -60,7 +47,7 @@ class SyntaxAnalyser:
         self.index = 0
 
     def syntax(self, source):
-        self.start = GraphNode('S', 0)
+        self.start = GraphNode(':S', 0)
         self.current = self.start
 
         self.source = source
@@ -69,7 +56,7 @@ class SyntaxAnalyser:
         while self.index < len(source):
             currentToken = self.source[self.index]
 
-            if self.current.identifier == 'S':
+            if self.current.identifier == ':S':
                 if currentToken.tokenClass == PREDICATE:
                     self.addCurrentToken(currentToken)
                     self.match(BRACKET_START)
@@ -82,26 +69,26 @@ class SyntaxAnalyser:
 
                 elif currentToken.tokenClass == BRACKET_START:
                     self.addCurrentToken(currentToken)
-                    self.pushChild('B')  
-                elif currentToken.tokenClass == BRACKET_END and len(self.current.children) == 2 and self.current.children[1].identifier == 'B':
+                    self.pushChild(':B')  
+                elif currentToken.tokenClass == BRACKET_END and len(self.current.children) == 2 and self.current.children[1].identifier == ':B':
                         self.addCurrentToken(currentToken)
                         self.complete()
 
                 elif currentToken.tokenClass == NEGATION:
                     self.addCurrentToken(currentToken)
                     self.current.complete = True
-                    self.pushChild('S') 
+                    self.pushChild(':S') 
 
                 elif currentToken.tokenClass == QUANTIFIER:
                     self.addCurrentToken(currentToken)
                     self.matchVariable()
                     self.current.complete = True
-                    self.pushChild('S') 
+                    self.pushChild(':S') 
 
                 else:
-                    raise Exception("Unexpected token: {} found while parsing Statement".format(str(self.source[self.index])))
+                    raise Exception("Unexpected token: {} found while at non-terminal: :S. Needed to be: PREDICATE, BRACKET_START, BRACKET_END, NEGATION OR QUANTIFIER".format(str(self.source[self.index])))
 
-            elif self.current.identifier == 'B':
+            elif self.current.identifier == ':B':
                 if len(self.current.children) == 0:
                     if currentToken.tokenClass == VARIABLE or currentToken.tokenClass == CONSTANT:
                         self.matchVariableConstant()
@@ -110,16 +97,19 @@ class SyntaxAnalyser:
                         self.matchVariableConstant()
                         self.complete()
                     else:
-                        self.pushChild('S')
+                        self.pushChild(':S')
                 elif len(self.current.children) == 1: 
                     self.current.complete = True
-                    self.pushChild('D')
+                    self.pushChild(':D')
 
                 
-            elif self.current.identifier == 'D':
+            elif self.current.identifier == ':D':
                 self.match(CONNECTIVE)
                 self.current.complete = True
-                self.pushChild('S')
+                self.pushChild(':S')
+
+        if self.current != self.start:
+            raise Exception("Unexpected EOF at position: {} Current node is of type: {}".format(len(source)-1, self.current.identifier))
 
         return self.start
 
@@ -131,15 +121,6 @@ class SyntaxAnalyser:
         newNode = GraphNode(className, self.current, False)
         self.current.children.append(newNode)
         self.current = newNode    
-
-    def matchMultiple(self, tokens):
-        if self.index < len(self.source):
-            if self.source[self.index].tokenClass not in tokens:
-                raise Exception("Unexpected token: {} found".format(str(self.source[self.index])))
-            self.current.children += [GraphNode('', self.current, self.source[self.index])]
-            self.index += 1
-        else:
-            raise Exception("End of file reached unexpectedly")
 
     #match a token without adding it to the tree
     def matchIgnore(self, token):
@@ -164,7 +145,7 @@ class SyntaxAnalyser:
             if self.source[self.index].tokenClass != VARIABLE:
                 raise Exception("Unexpected token: {} found, expecting a token of type: {}".format(str(self.source[self.index]), getTokenClassStr(VARIABLE)))
             
-            newChild = GraphNode('V', self.current, complete=True)
+            newChild = GraphNode(':V', self.current, complete=True)
             newChild.children = [GraphNode('', newChild, self.source[self.index], True)]
             self.current.children += [newChild]
             self.index += 1
@@ -176,9 +157,9 @@ class SyntaxAnalyser:
             if self.source[self.index].tokenClass != VARIABLE and self.source[self.index].tokenClass != CONSTANT:
                 raise Exception("Unexpected token: {} found, expecting a token of type: {} or: {}".format(str(self.source[self.index]), getTokenClassStr(VARIABLE), getTokenClassStr(CONSTANT)))
             
-            t = 'V'
+            t = ':V'
             if self.source[self.index].tokenClass != VARIABLE:
-                t = 'C'
+                t = ':C'
 
             newChild = GraphNode(t, self.current, complete=True)
             newChild.children = [GraphNode('', newChild, self.source[self.index], True)]
@@ -192,4 +173,4 @@ class SyntaxAnalyser:
         while True:
             if self.current.parent == 0 or not self.current.complete:
                 return
-            self.current = self.current.parent                  
+            self.current = self.current.parent       
