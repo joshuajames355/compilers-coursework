@@ -1,3 +1,0 @@
-requires graphviz
-
-https://stackoverflow.com/questions/36869258/how-to-use-graphviz-with-anaconda-spyder?fbclid=IwAR36ebfrqGIPp1bRJ_l4qDvP7IssjEYE8oYDD6k4dlGtOF6caPGGLroSWs4
